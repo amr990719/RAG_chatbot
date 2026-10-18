@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FinSolve · Internal Assistant</title>
+<style>
+  :root {
+    --bg: #f5f6fa;
+    --surface: #ffffff;
+    --surface-2: #eef0f6;
+    --border: #e2e5ee;
+    --text: #1a1d29;
+    --text-dim: #5b6070;
+    --primary: #3b4cca;
+    --primary-ink: #ffffff;
+    --accent: #0ea5a4;
+    --warn-bg: #fff6e6;
+    --warn-border: #f4c778;
+    --warn-text: #8a5a00;
+    --shadow: 0 1px 3px rgba(20, 24, 40, .06), 0 8px 24px rgba(20, 24, 40, .06);
+    --radius: 16px;
+
+    --role-finance: #0ea5a4;
+    --role-marketing: #e0559b;
+    --role-hr: #8b5cf6;
+    --role-engineering: #3b82f6;
+    --role-c_level: #d99a13;
+    --role-employee: #64748b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1016;
+      --surface: #171a22;
+      --surface-2: #1f232e;
+      --border: #2a2f3c;
+      --text: #e8eaf0;
+      --text-dim: #9aa1b3;
+      --primary: #7c8cff;
+      --primary-ink: #0e1016;
+      --accent: #2dd4bf;
+      --warn-bg: #2a2213;
+      --warn-border: #5c4a22;
+      --warn-text: #f0c063;
+      --shadow: 0 1px 3px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1016; --surface: #171a22; --surface-2: #1f232e; --border: #2a2f3c;
+    --text: #e8eaf0; --text-dim: #9aa1b3; --primary: #7c8cff; --primary-ink: #0e1016;
+    --accent: #2dd4bf; --warn-bg: #2a2213; --warn-border: #5c4a22; --warn-text: #f0c063;
+    --shadow: 0 1px 3px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font: inherit; cursor: pointer; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -.02em; }
+  .brand .mark {
+    width: 30px; height: 30px; border-radius: 9px; flex: none;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 15px;
+  }
+  .brand .name { font-size: 17px; }
+  .brand .sub { color: var(--text-dim); font-weight: 500; font-size: 13px; }
+
+  .role-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;
+    color: #fff; white-space: nowrap;
+  }
+  .role-badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.85); }
+  .role-finance { background: var(--role-finance); }
+  .role-marketing { background: var(--role-marketing); }
+  .role-hr { background: var(--role-hr); }
+  .role-engineering { background: var(--role-engineering); }
+  .role-c_level { background: var(--role-c_level); }
+  .role-employee { background: var(--role-employee); }
+
+  /* ---------- Login ---------- */
+  #login-view { min-height: 100%; display: grid; place-items: center; padding: 40px 20px; }
+  .login-card {
+    width: 100%; max-width: 720px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow); padding: 32px;
+  }
+  .login-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .login-card h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -.02em; }
+  .login-card .lead { color: var(--text-dim); margin: 0 0 22px; }
+  .user-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+  .user-card {
+    text-align: left; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px;
+    transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease;
+  }
+  .user-card:hover { transform: translateY(-2px); border-color: var(--primary); box-shadow: var(--shadow); }
+  .user-card .avatar {
+    width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center;
+    color: #fff; font-weight: 700; font-size: 15px;
+  }
+  .user-card .u-name { font-weight: 650; }
+  .user-card .u-title { color: var(--text-dim); font-size: 13px; }
+  .demo-note { color: var(--text-dim); font-size: 13px; margin: 20px 0 0; }
+
+  /* ---------- Chat ---------- */
+  #chat-view { display: flex; flex-direction: column; height: 100%; }
+  .topbar {
+    display: flex; align-items: center; gap: 16px; padding: 12px 20px;
+    background: var(--surface); border-bottom: 1px solid var(--border); flex: none;
+  }
+  .topbar .spacer { flex: 1; }
+  .whoami { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .whoami .avatar { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 14px; flex: none; }
+  .whoami .meta { min-width: 0; }
+  .whoami .n { font-weight: 600; font-size: 14px; line-height: 1.2; }
+  .whoami .access { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+  .chip {
+    font-size: 11px; padding: 2px 8px; border-radius: 999px;
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--text-dim);
+  }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); display: grid; place-items: center; flex: none;
+  }
+  .icon-btn:hover { background: var(--surface-2); }
+  .text-btn { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 10px; padding: 8px 14px; font-weight: 600; }
+  .text-btn:hover { background: var(--surface-2); }
+
+  .messages { flex: 1; overflow-y: auto; padding: 24px 0; }
+  .messages-inner { max-width: 780px; margin: 0 auto; padding: 0 20px; display: flex; flex-direction: column; gap: 18px; }
+
+  .empty { text-align: center; color: var(--text-dim); padding: 48px 12px; }
+  .empty h2 { color: var(--text); margin: 12px 0 6px; letter-spacing: -.02em; }
+  .suggestions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 22px; }
+  .suggestion {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 10px 14px; color: var(--text); font-size: 13.5px; text-align: left; max-width: 320px;
+  }
+  .suggestion:hover { border-color: var(--primary); }
+
+  .msg { display: flex; gap: 12px; }
+  .msg .bubble-avatar { width: 30px; height: 30px; border-radius: 8px; flex: none; display: grid; place-items: center; font-size: 13px; font-weight: 700; color: #fff; }
+  .msg.user { flex-direction: row-reverse; }
+  .bubble {
+    padding: 12px 15px; border-radius: 14px; max-width: 76%;
+    white-space: pre-wrap; word-wrap: break-word; overflow-wrap: anywhere;
+  }
+  .msg.assistant .bubble { background: var(--surface); border: 1px solid var(--border); border-top-left-radius: 4px; }
+  .msg.user .bubble { background: var(--primary); color: var(--primary-ink); border-top-right-radius: 4px; }
+  .msg.assistant .bubble-avatar { background: linear-gradient(135deg, var(--primary), var(--accent)); }
+  .msg.user .bubble-avatar { background: var(--role-employee); }
+
+  .bubble.warn { background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-text); }
+
+  .sources { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .sources .label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .04em; margin-right: 2px; }
+  .source-chip {
+    font-size: 11.5px; padding: 3px 9px; border-radius: 999px;
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--text-dim);
+  }
+
+  .typing { display: inline-flex; gap: 4px; align-items: center; padding: 4px 2px; }
+  .typing span { width: 7px; height: 7px; border-radius: 50%; background: var(--text-dim); opacity: .5; animation: blink 1.2s infinite; }
+  .typing span:nth-child(2) { animation-delay: .2s; }
+  .typing span:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%, 60%, 100% { opacity: .25; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-2px); } }
+
+  .composer-wrap { flex: none; border-top: 1px solid var(--border); background: var(--surface); }
+  .composer { max-width: 780px; margin: 0 auto; padding: 14px 20px; display: flex; gap: 10px; align-items: flex-end; }
+  .composer textarea {
+    flex: 1; resize: none; border: 1px solid var(--border); background: var(--bg); color: var(--text);
+    border-radius: 12px; padding: 11px 14px; font: inherit; max-height: 160px; line-height: 1.5;
+  }
+  .composer textarea:focus { outline: 2px solid var(--primary); outline-offset: -1px; border-color: transparent; }
+  .send-btn {
+    background: var(--primary); color: var(--primary-ink); border: none; border-radius: 12px;
+    width: 44px; height: 44px; flex: none; display: grid; place-items: center;
+  }
+  .send-btn:disabled { opacity: .45; cursor: not-allowed; }
+  .composer-hint { max-width: 780px; margin: 0 auto; padding: 0 20px 10px; color: var(--text-dim); font-size: 11.5px; }
+
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ LOGIN ============ -->
+  <section id="login-view">
+    <div class="login-card">
+      <div class="login-head">
+        <div class="brand">
+          <div class="mark">F</div>
+          <div>
+            <div class="name">FinSolve <span class="sub">Technologies</span></div>
+          </div>
+        </div>
+        <button class="icon-btn" id="theme-toggle-login" title="Toggle theme">◐</button>
+      </div>
+      <h1>Internal Assistant</h1>
+      <p class="lead">Choose a demo user to sign in. Your role decides which company data the assistant can access.</p>
+      <div class="user-grid" id="user-grid"></div>
+      <p class="demo-note">Demo login — no password. In production this would be your SSO identity; the role, not the browser, drives access control.</p>
+    </div>
+  </section>
+
+  <!-- ============ CHAT ============ -->
+  <section id="chat-view" hidden>
+    <div class="topbar">
+      <div class="brand"><div class="mark">F</div><div class="name" style="font-size:15px">FinSolve</div></div>
+      <div class="spacer"></div>
+      <div class="whoami">
+        <div class="avatar" id="wa-avatar"></div>
+        <div class="meta">
+          <div class="n" id="wa-name"></div>
+          <div class="access" id="wa-access"></div>
+        </div>
+      </div>
+      <button class="icon-btn" id="theme-toggle" title="Toggle theme">◐</button>
+      <button class="text-btn" id="logout-btn">Log out</button>
+    </div>
+
+    <div class="messages" id="messages">
+      <div class="messages-inner" id="messages-inner"></div>
+    </div>
+
+    <div class="composer-wrap">
+      <form class="composer" id="composer">
+        <textarea id="input" rows="1" placeholder="Ask about company data you have access to…" autocomplete="off"></textarea>
+        <button class="send-btn" id="send-btn" type="submit" title="Send" aria-label="Send">➤</button>
+      </form>
+      <div class="composer-hint">Enter to send · Shift+Enter for a new line · Answers are grounded only in documents your role can access.</div>
+    </div>
+  </section>
+</div>
+
+<script>
+const ROLE_COLORS = {
+  finance: "var(--role-finance)", marketing: "var(--role-marketing)", hr: "var(--role-hr)",
+  engineering: "var(--role-engineering)", c_level: "var(--role-c_level)", employee: "var(--role-employee)",
+};
+const SUGGESTIONS = {
+  finance: ["What were the marketing expenses on vendor services in 2024?", "What was net income growth in 2024?"],
+  marketing: ["What were the Q3 2024 campaign highlights?", "What are our marketing benchmarks?"],
+  hr: ["What is the employee leave policy?", "Summarize the payroll schedule."],
+  engineering: ["Describe the high-level system architecture.", "What is the deployment pipeline?"],
+  c_level: ["What was net income growth in 2024?", "Summarize the engineering architecture."],
+  employee: ["What is the company's work-from-home policy?", "What are the core company values?"],
+};
+
+let session = null; // { token, user, allowed_departments }
+
+/* ---------- theme ---------- */
+function applyTheme(t) {
+  if (t) document.documentElement.setAttribute("data-theme", t);
+  else document.documentElement.removeAttribute("data-theme");
+}
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute("data-theme");
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const next = cur ? (cur === "dark" ? "light" : "dark") : (prefersDark ? "light" : "dark");
+  applyTheme(next);
+  sessionStorage.setItem("theme", next);
+}
+applyTheme(sessionStorage.getItem("theme"));
+document.getElementById("theme-toggle").onclick = toggleTheme;
+document.getElementById("theme-toggle-login").onclick = toggleTheme;
+
+function initials(name) { return name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase(); }
+function roleColor(role) { return ROLE_COLORS[role] || "var(--role-employee)"; }
+function roleLabel(role) { return role === "c_level" ? "C-Level" : role.charAt(0).toUpperCase() + role.slice(1); }
+
+/* ---------- login ---------- */
+async function loadUsers() {
+  const res = await fetch("/api/users");
+  const users = await res.json();
+  const grid = document.getElementById("user-grid");
+  grid.innerHTML = "";
+  for (const u of users) {
+    const card = document.createElement("button");
+    card.className = "user-card";
+    card.onclick = () => login(u.username);
+    card.innerHTML = `
+      <div class="avatar" style="background:${roleColor(u.role)}">${initials(u.name)}</div>
+      <div>
+        <div class="u-name"></div>
+        <div class="u-title"></div>
+      </div>
+      <span class="role-badge role-${u.role}">${roleLabel(u.role)}</span>`;
+    card.querySelector(".u-name").textContent = u.name;
+    card.querySelector(".u-title").textContent = u.title;
+    grid.appendChild(card);
+  }
+}
+
+async function login(username) {
+  const res = await fetch("/api/login", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username }),
+  });
+  session = await res.json();
+  sessionStorage.setItem("session", JSON.stringify(session));
+  enterChat();
+}
+
+function enterChat() {
+  const { user, allowed_departments } = session;
+  document.getElementById("login-view").hidden = true;
+  document.getElementById("chat-view").hidden = false;
+
+  const av = document.getElementById("wa-avatar");
+  av.textContent = initials(user.name);
+  av.style.background = roleColor(user.role);
+
+  const name = document.getElementById("wa-name");
+  name.textContent = user.name + " · ";
+  const badge = document.createElement("span");
+  badge.className = "role-badge role-" + user.role;
+  badge.textContent = roleLabel(user.role);
+  name.appendChild(badge);
+
+  const access = document.getElementById("wa-access");
+  access.innerHTML = '<span class="chip">access:</span>';
+  for (const d of allowed_departments) {
+    const c = document.createElement("span");
+    c.className = "chip";
+    c.textContent = d;
+    access.appendChild(c);
+  }
+  renderEmptyState();
+  document.getElementById("input").focus();
+}
+
+function renderEmptyState() {
+  const inner = document.getElementById("messages-inner");
+  inner.innerHTML = "";
+  const empty = document.createElement("div");
+  empty.className = "empty";
+  empty.innerHTML = `<h2>Hi ${session.user.name.split(" ")[0]} 👋</h2>
+    <div>Ask a question about FinSolve's internal data you're allowed to see.</div>
+    <div class="suggestions"></div>`;
+  const sugg = empty.querySelector(".suggestions");
+  for (const s of (SUGGESTIONS[session.user.role] || [])) {
+    const b = document.createElement("button");
+    b.className = "suggestion";
+    b.textContent = s;
+    b.onclick = () => { document.getElementById("input").value = s; sendMessage(); };
+    sugg.appendChild(b);
+  }
+  inner.appendChild(empty);
+}
+
+/* ---------- messages ---------- */
+function clearEmptyState() {
+  const e = document.querySelector("#messages-inner .empty");
+  if (e) e.remove();
+}
+function scrollDown() {
+  const m = document.getElementById("messages");
+  m.scrollTop = m.scrollHeight;
+}
+function addMessage(role, text, { warn = false, sources = null } = {}) {
+  clearEmptyState();
+  const inner = document.getElementById("messages-inner");
+  const msg = document.createElement("div");
+  msg.className = "msg " + role;
+
+  const avatar = document.createElement("div");
+  avatar.className = "bubble-avatar";
+  avatar.textContent = role === "user" ? initials(session.user.name) : "AI";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble" + (warn ? " warn" : "");
+  bubble.textContent = text;
+
+  if (sources && sources.length) {
+    const s = document.createElement("div");
+    s.className = "sources";
+    s.innerHTML = '<span class="label">Sources</span>';
+    for (const src of sources) {
+      const chip = document.createElement("span");
+      chip.className = "source-chip";
+      chip.textContent = src;
+      s.appendChild(chip);
+    }
+    bubble.appendChild(s);
+  }
+
+  msg.appendChild(avatar);
+  msg.appendChild(bubble);
+  inner.appendChild(msg);
+  scrollDown();
+  return bubble;
+}
+
+function addTyping() {
+  clearEmptyState();
+  const inner = document.getElementById("messages-inner");
+  const msg = document.createElement("div");
+  msg.className = "msg assistant";
+  msg.id = "typing-msg";
+  msg.innerHTML = `<div class="bubble-avatar">AI</div>
+    <div class="bubble"><span class="typing"><span></span><span></span><span></span></span></div>`;
+  inner.appendChild(msg);
+  scrollDown();
+}
+function removeTyping() {
+  const t = document.getElementById("typing-msg");
+  if (t) t.remove();
+}
+
+let sending = false;
+async function sendMessage() {
+  const input = document.getElementById("input");
+  const question = input.value.trim();
+  if (!question || sending) return;
+
+  sending = true;
+  document.getElementById("send-btn").disabled = true;
+  addMessage("user", question);
+  input.value = "";
+  input.style.height = "auto";
+  addTyping();
+
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: session.token, question }),
+    });
+    removeTyping();
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      if (res.status === 401) { logout(); return; }
+      addMessage("assistant", "⚠ " + (err.detail || "Something went wrong."), { warn: true });
+    } else {
+      const data = await res.json();
+      addMessage("assistant", data.answer, { warn: data.out_of_scope, sources: data.sources });
+    }
+  } catch (e) {
+    removeTyping();
+    addMessage("assistant", "⚠ Could not reach the server.", { warn: true });
+  } finally {
+    sending = false;
+    document.getElementById("send-btn").disabled = false;
+    document.getElementById("input").focus();
+  }
+}
+
+/* ---------- logout ---------- */
+async function logout() {
+  if (session) { try { await fetch("/api/logout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: session.token, question: "" }) }); } catch (e) {} }
+  session = null;
+  sessionStorage.removeItem("session");
+  document.getElementById("chat-view").hidden = true;
+  document.getElementById("login-view").hidden = false;
+}
+
+/* ---------- wiring ---------- */
+const input = document.getElementById("input");
+input.addEventListener("input", () => { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 160) + "px"; });
+input.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+document.getElementById("composer").addEventListener("submit", (e) => { e.preventDefault(); sendMessage(); });
+document.getElementById("logout-btn").onclick = logout;
+
+// Restore an existing session on refresh, otherwise show login.
+const saved = sessionStorage.getItem("session");
+if (saved) { session = JSON.parse(saved); enterChat(); }
+loadUsers();
+</script>
+</body>
+</html>

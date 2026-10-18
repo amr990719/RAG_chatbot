@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+chroma_db/
+.hf_cache/
+.gradio/
+__pycache__/
+*.pyc
+RAG_project.venv/
+.venv/
+venv/

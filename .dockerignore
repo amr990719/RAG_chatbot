@@ -1,0 +1,13 @@
+# Keep the build context small and secrets out of the image.
+# NOTE: do NOT exclude *.md globally -- data/ documents are markdown and are
+# needed by ingest.py. Only exclude the top-level notes/docs.
+.env
+RAG_project.venv/
+chroma_db/
+.hf_cache/
+__pycache__/
+*.pyc
+.git/
+.gitignore
+STUDY_NOTES.md
+DEPLOYMENT.md
